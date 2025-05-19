@@ -1,0 +1,1269 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sarvekshanam : Smart Web Vulnerability Dashboard</title>
+  <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/js/all.min.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+
+</head>
+
+<body class="bg-gray-100 min-h-screen">
+
+  <header class="bg-[#213348] text-white shadow-lg relative">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-16">
+        <!-- Title -->
+        <div class="flex-shrink-0">
+          <img src="{{ url_for('static', filename='logo.png') }}" alt="Sarvekshanam : Smart Web Vulnerability Dashboard"
+            class="h-12 w-auto">
+        </div>
+
+        <!-- Navigation -->
+        <div class="flex items-center space-x-4">
+          <a href="/" id="chat-tab" class="border-white border px-3 py-2 rounded-md text-sm font-medium">Chat</a>
+          <a href="/dashboard" id="dashboard-tab"
+            class="px-3 py-2 bg-[#4aaba9] rounded-md text-sm font-medium">Dashboard</a>
+          <a href="/new" class="border-white border px-3 py-2 rounded-md text-sm font-medium">+</a>
+
+          <!-- Settings Icon -->
+          <div class="relative">
+            <button id="settings-btn" class="border border-white px-3 py-2 rounded-md text-sm font-medium">⚙</button>
+
+            <!-- Settings Dropdown -->
+            <div id="settings-menu"
+              class="absolute right-0 mt-2 w-72 bg-white text-black shadow-lg rounded-lg p-4 hidden z-50">
+              <h2 class="text-lg font-semibold mb-3">Remote Endpoint</h2>
+              <div class="relative">
+                <input id="remote-endpoint-input" type="text" placeholder="Type or pick an endpoint..."
+                  class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <div id="endpoint-dropdown"
+                  class="absolute z-40 mt-1 w-full max-h-52 overflow-y-auto bg-white border border-gray-300 rounded shadow-lg hidden">
+                  <!-- items injected by JS -->
+                </div>
+              </div>
+              <div class="flex gap-2 mt-4">
+                <button id="set-remote-btn"
+                  class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Set</button>
+                <button id="get-features-btn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">Get
+                  Features</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+
+
+
+  <div class="container mx-auto px-4 py-6">
+
+    <!-- First Row -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <!-- R1C1 - URL Input and Module Selection -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-lg font-semibold mb-4">Scan Configuration</h2>
+        <div id="scan-config" class="mb-4">
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Target URL</label>
+            <div class="flex">
+              <input type="text" id="target-url" placeholder="https://example.com"
+                class="flex-grow px-3 py-2 border border-gray-300 rounded-l focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <button class="bg-[#4aaba9] text-white px-4 py-2 rounded-r">Scan</button>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Select Modules</label>
+            <div id="modules-container" class="grid grid-cols-2 md:grid-cols-4 gap-2">
+              <!-- Checkboxes will be injected here -->
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Progress Bars (Initially Hidden) -->
+        <!-- Simplified Single Progress View -->
+        <div id="scan-progress" class="hidden mt-6">
+          <h3 class="text-md font-medium mb-3">Scan Progress</h3>
+
+          <div class="w-full bg-gray-200 rounded-full h-4 mb-2">
+            <div id="progress-bar" class="bg-blue-600 h-4 rounded-full transition-all duration-500" style="width: 0%">
+            </div>
+          </div>
+
+          <div class="flex justify-between text-sm mb-2">
+            <span id="progress-status" class="text-gray-700">Status: -</span>
+            <span id="progress-percentage" class="text-gray-700">0%</span>
+          </div>
+        </div>
+
+
+        <!-- Toggle between scan config and progress -->
+        <div class="mt-4 text-center">
+          <button onclick="toggleScanView()" class="text-blue-600 hover:text-blue-800 text-sm">
+            Show Progress View
+          </button>
+        </div>
+      </div>
+
+      <!-- R1C2 - Categories and Severity Counts -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-lg font-semibold mb-4">Vulnerability Summary</h2>
+        <div class="flex flex-wrap mb-4">
+          <div class="w-1/4 text-center p-2">
+            <div class="text-3xl font-bold text-red-600" id="v-h">-</div>
+            <div class="text-sm text-gray-600">High</div>
+          </div>
+          <div class="w-1/4 text-center p-2">
+            <div class="text-3xl font-bold text-yellow-500" id="v-m">-</div>
+            <div class="text-sm text-gray-600">Medium</div>
+          </div>
+          <div class="w-1/4 text-center p-2">
+            <div class="text-3xl font-bold text-blue-500" id="v-l">-</div>
+            <div class="text-sm text-gray-600">Low</div>
+          </div>
+          <div class="w-1/4 text-center p-2">
+            <div class="text-3xl font-bold text-gray-500" id="v-i">-</div>
+            <div class="text-sm text-gray-600">Info</div>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead>
+              <tr>
+                <th class="px-4 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Category</th>
+                <th class="px-4 py-3 bg-gray-50 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  High</th>
+                <th class="px-4 py-3 bg-gray-50 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Medium</th>
+                <th class="px-4 py-3 bg-gray-50 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Low</th>
+                <th class="px-4 py-3 bg-gray-50 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Info</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Second Row -->
+    <div class="grid grid-cols-12 gap-6">
+      <!-- R2C1 - Module Categories and Files -->
+      <!-- Replace the hardcoded file list section in R2C1 with this -->
+      <div class="col-span-12 md:col-span-4 lg:col-span-3 bg-white rounded-lg shadow">
+        <div class="p-4 border-b">
+          <h2 class="text-lg font-semibold">Module Files</h2>
+        </div>
+
+        <div class="p-4" id="file-categories-container">
+          <!-- This will be populated dynamically from the API -->
+          <div class="flex items-center justify-center h-48 text-gray-400">
+            <p id="file-status-message">Loading files...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- R2C2 - File Viewer -->
+      <div class="col-span-12 md:col-span-8 lg:col-span-9 bg-white rounded-lg shadow">
+        <div class="flex items-center justify-between p-4 border-b">
+          <div class="flex items-center">
+            <h2 class="text-lg font-semibold">File Viewer</h2>
+            <span class="ml-2 text-sm text-gray-500" id="current-file">No file selected</span>
+          </div>
+          <div class="flex space-x-2">
+            <button id="download-btn"
+              class="text-gray-500 hover:text-gray-700 px-2 py-1 rounded border border-gray-300 text-sm">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd"
+                  d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L10 12.586l2.293-2.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
+                  clip-rule="evenodd"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="p-4">
+          <div id="file-content" class="bg-gray-50 p-4 rounded border text-sm font-mono h-96 overflow-auto">
+            <div class="flex items-center justify-center h-full text-gray-400">
+              <p>Select a file to view its contents</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg shadow-lg w-11/12 max-w-4xl p-6 relative max-h-[90vh] overflow-y-auto">
+      <h2 id="modal-title" class="text-lg font-bold mb-4">Message</h2>
+      <div id="modal-body"
+        class="text-sm text-gray-800 whitespace-pre-wrap overflow-x-auto max-h-[60vh] p-2 bg-gray-100 rounded border">
+      </div>
+      <div class="mt-4 flex justify-end space-x-2">
+        <button id="download-json"
+          class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">Download</button>
+        <button id="modal-close" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">Close</button>
+      </div>
+      <button id="modal-close-icon" class="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-xl">✕</button>
+    </div>
+  </div>
+
+
+
+  <script>
+
+
+    $("#modal").on("click", function (e) {
+      if ($(e.target).is("#modal")) {
+        $(this).addClass("hidden");
+      }
+    });
+
+    let tc;
+
+    // Function to shorten UUIDs in filenames
+    function shortenFileName(fileName) {
+      // Regular expression to match UUID pattern in a filename
+      // This matches filenames ending with _UUID.extension
+      const uuidRegex = /^(.+?)_([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(\..+)$/i;
+
+      if (uuidRegex.test(fileName)) {
+        // Extract parts of the filename
+        const match = fileName.match(uuidRegex);
+        const prefix = match[1];
+        const uuid = match[2];
+        const extension = match[3];
+
+        // Create a shortened version with first 4 and last 4 characters of the UUID
+        const shortUuid = uuid.substring(0, 4) + '_' + uuid.substring(uuid.length - 4);
+
+        return `${prefix}_${shortUuid}${extension}`;
+      }
+
+      // Return original if no UUID pattern found
+      return fileName;
+    }
+
+    document.querySelector('#scan-config button').addEventListener('click', function () {
+      const url = document.getElementById('target-url').value.trim();
+      const checkboxes = document.querySelectorAll('.scan-module:checked');
+      const modules = Array.from(checkboxes).map(cb => cb.nextElementSibling.textContent.trim());
+
+      if (!url || modules.length === 0) {
+        alert('Please enter a URL and select at least one module.');
+        return;
+      }
+
+      fetch('/start_attack', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ url, modules })
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.auth_token) {
+            alert(`Scan started!\nToken: ${data.auth_token}`);
+            checkStatusAndUpdateProgress(); // Trigger polling
+          } else {
+            console.error(data);
+            alert("Failed to start scan.");
+          }
+        })
+        .catch(err => {
+          console.error('Error:', err);
+          alert('Something went wrong while starting the scan.');
+        });
+    });
+    document.addEventListener('DOMContentLoaded', function () {
+
+
+      // Toggle between scan configuration and progress view
+      const toggleButton = document.querySelector('button.text-blue-600');
+      toggleButton.addEventListener('click', function () {
+        const configView = document.getElementById('scan-config');
+        const progressView = document.getElementById('scan-progress');
+
+        const showingConfig = !configView.classList.contains('hidden');
+        configView.classList.toggle('hidden', showingConfig);
+        progressView.classList.toggle('hidden', !showingConfig);
+        toggleButton.textContent = showingConfig ? 'Show Configuration' : 'Show Progress View';
+      });
+
+      // Download button functionality
+      document.getElementById('download-btn').addEventListener('click', function () {
+        const currentFileElement = document.getElementById('current-file');
+        const fileName = currentFileElement.getAttribute('realname');
+        const fileContent = document.getElementById('file-content').innerText;
+
+        if (fileName && fileName !== 'No file selected' && fileContent) {
+          // Create a blob from the content
+          const blob = new Blob([fileContent], { type: 'text/plain' });
+
+          // Create a temporary download link
+          const link = document.createElement('a');
+          link.href = window.URL.createObjectURL(blob);
+          link.download = fileName;
+
+          // Append to the document, click it, and remove it
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+
+          // Clean up the URL object
+          window.URL.revokeObjectURL(link.href);
+        }
+      });
+      // 'Select all' checkbox toggle logic
+      const selectAll = document.getElementById('select-all');
+      if (selectAll) {
+        selectAll.addEventListener('change', function () {
+          const checkboxes = document.querySelectorAll('input[type="checkbox"]:not(#select-all)');
+          checkboxes.forEach(checkbox => checkbox.checked = selectAll.checked);
+        });
+      }
+
+      // Initialize progress checking
+      checkStatusAndUpdateProgress();
+
+      // Start polling every 10 seconds
+      tc = setInterval(checkStatusAndUpdateProgress, 10000);
+
+      // Load session data if available
+      fetch('/session-data')
+        .then(res => {
+          if (!res.ok) throw new Error("No session");
+          return res.json();
+        })
+        .then(data => {
+          // Autofill URL input
+          const urlInput = document.querySelector('#scan-config input[type="text"]');
+          if (data.url) urlInput.value = data.url;
+
+          // Autofill modules
+          const checkboxes = document.querySelectorAll('#scan-config input[type="checkbox"]');
+          if (Array.isArray(data.modules)) {
+            checkboxes.forEach(cb => {
+              const label = cb.nextElementSibling?.textContent?.trim();
+              cb.checked = data.modules.includes(label);
+            });
+          }
+        })
+        .catch(err => {
+          console.log('No session data found:', err);
+        });
+    });
+
+    // Escape HTML for safe display
+    function escapeHtml(unsafe) {
+      return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function toggleScanView() {
+      const configView = document.getElementById('scan-config');
+      const progressView = document.getElementById('scan-progress');
+      const toggleButton = event.target;
+
+      const showingConfig = !configView.classList.contains('hidden');
+      configView.classList.toggle('hidden', showingConfig);
+      progressView.classList.toggle('hidden', !showingConfig);
+      toggleButton.textContent = showingConfig ? 'Show Configuration' : 'Show Progress View';
+    }
+
+    // Function to check if processing is done
+    function checkProcessingStatus() {
+      // First check /stat one last time to see if it shows complete
+      fetch('/stat')
+        .then(response => response.json())
+        .then(record => {
+          const percentage = record.total_files > 0 ? (record.files_processed / record.total_files * 100) : 0;
+
+          // If the scan is complete based on /stat (>99%)
+          if (percentage > 99) {
+            // Call the /check endpoint to confirm processing is truly complete
+            checkFinalStatus();
+          } else {
+            // Not complete yet, update UI and check again later
+            updateProgressBars({
+              percentage: percentage,
+              status: "in_progress"
+            });
+            setTimeout(checkProcessingStatus, 10000);
+          }
+        })
+        .catch(error => {
+          console.error('Error checking status:', error);
+          document.getElementById('file-status-message').textContent = 'Error checking status';
+          setTimeout(checkProcessingStatus, 10000);
+        });
+    }
+
+    // Modify the checkStatusAndUpdateProgress function
+    function checkStatusAndUpdateProgress() {
+      fetch('/stat')
+        .then(response => {
+          if (response.status === 401) {
+            // Unauthorized: Hide progress or prevent access
+            document.getElementById('scan-progress').classList.add('hidden');
+            document.getElementById('scan-config').classList.remove('hidden');
+            return;
+          }
+          return response.json();
+        })
+        .then(record => {
+          if (!record) return; // Handle the case where we returned early due to 401
+
+          // Ensure files_processed doesn't exceed total_files
+          const processed = Math.min(record.files_processed, record.total_files);
+
+          // Calculate percentage but cap it at 99% until final check confirms report exists
+          let percentage = record.total_files > 0 ? (processed / record.total_files * 100) : 0;
+          // Cap at 99% until we confirm the report file exists
+          percentage = Math.min(percentage, 99);
+
+          const progressData = {
+            files_processed: processed,
+            total_files: record.total_files,
+            status: processed >= record.total_files ? "almost_complete" : "in_progress",
+            percentage: percentage
+          };
+
+          console.log("Progress data:", progressData);
+
+          // Show progress view
+          document.getElementById('scan-config').classList.add('hidden');
+          document.getElementById('scan-progress').classList.remove('hidden');
+
+          // Update progress bars
+          updateProgressBars(progressData);
+
+          // If all files are processed (stat shows close to 100%)
+          if (processed >= record.total_files) {
+            // Stop this polling interval
+            clearInterval(tc);
+            // Start checking if processing is truly complete with report file
+            checkFinalStatus();
+          }
+        })
+        .catch(error => {
+          console.error('Error while fetching /stat:', error);
+          document.getElementById('scan-progress').classList.add('hidden');
+          document.getElementById('scan-config').classList.remove('hidden');
+        });
+    }
+
+    // Update the checkFinalStatus function to use the existing /check endpoint
+    function checkFinalStatus() {
+      fetch('/check')
+        .then(response => {
+          // Store the response status
+          const status = response.status;
+
+          // If status is 200 but response is not "wait", the report exists
+          if (status === 200) {
+            return response.text().then(text => {
+              if (text === "wait") {
+                // Report not ready yet
+                return { reportExists: false };
+              } else {
+                // Report exists and content is returned
+                return { reportExists: true };
+              }
+            });
+          } else if (status === 401) {
+            throw new Error("Unauthorized");
+          } else {
+            throw new Error(`Unexpected status: ${status}`);
+          }
+        })
+        .then(result => {
+          if (result.reportExists) {
+            // Report file exists, show 100% complete
+            updateProgressBars({
+              percentage: 100,
+              status: "complete"
+            });
+
+            // Load file categories
+            loadFileCategories();
+            loadVulnerabilityStats();
+          } else {
+            // Report file doesn't exist yet, stay at 99%
+            updateProgressBars({
+              percentage: 99,
+              status: "almost_complete"
+            });
+
+            document.getElementById('file-status-message').textContent = 'Generating final report...';
+            setTimeout(checkFinalStatus, 5000);
+          }
+        })
+        .catch(error => {
+          console.error('Error checking final status:', error);
+          document.getElementById('file-status-message').textContent = 'Error checking final status';
+          setTimeout(checkFinalStatus, 10000);
+        });
+    }
+
+    // Update the updateProgressBars function to handle the "almost_complete" status
+    function updateProgressBars(progressData) {
+      // Ensure percentage is between 0 and 100
+      const percentage = Math.min(Math.max(Math.round(progressData.percentage), 0), 100);
+      const status = progressData.status;
+
+      const progressBar = document.getElementById('progress-bar');
+      const progressStatus = document.getElementById('progress-status');
+      const progressPercentage = document.getElementById('progress-percentage');
+
+      progressBar.style.width = `${percentage}%`;
+
+      // Update status text based on status value
+      if (status === "complete") {
+        progressStatus.textContent = 'Status: Complete';
+      } else if (status === "almost_complete") {
+        progressStatus.textContent = 'Status: Finalizing Report';
+      } else {
+        progressStatus.textContent = 'Status: In Progress';
+      }
+
+      progressPercentage.textContent = `${percentage}%`;
+
+      // Update progress bar color based on status
+      progressBar.classList.remove("bg-blue-600", "bg-green-500", "bg-yellow-500");
+
+      if (status === "complete") {
+        progressBar.classList.add("bg-green-500");
+      } else if (status === "almost_complete") {
+        progressBar.classList.add("bg-yellow-500");
+      } else {
+        progressBar.classList.add("bg-blue-600");
+      }
+    }
+
+    // Function to load file categories from API
+    function loadFileCategories() {
+      fetch('/file_categories')
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Unauthorized or server error');
+          }
+          return response.json();
+        })
+        .then(data => {
+          renderFileCategories(data);
+        })
+        .catch(error => {
+          console.error('Error loading file categories:', error);
+          document.getElementById('file-status-message').textContent = 'Error loading files. Please try again.';
+        });
+    }
+
+    // Function to render file categories in the UI
+
+    function renderFileCategories(data) {
+      const container = document.getElementById('file-categories-container');
+
+      // Clear loading message
+      container.innerHTML = '';
+
+      // Add report file if it exists
+      if (data.report) {
+        const reportDiv = document.createElement('div');
+        reportDiv.className = 'mb-4';
+
+        const shortReportName = shortenFileName(data.report);
+
+        reportDiv.innerHTML = `
+      <div class="flex items-center justify-between mb-2">
+        <h3 class="font-medium text-gray-700">Consolidated Report</h3>
+        <button class="text-xs text-blue-600 hover:text-blue-800 flex items-center"
+                onclick="downloadAllFiles(['${data.report}'], 'report')">
+          <span>Download</span>
+          <svg class="w-3 h-3 ml-1" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd"
+              d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L10 12.586l2.293-2.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
+              clip-rule="evenodd"></path>
+          </svg>
+        </button>
+      </div>
+      <div class="pl-2 border-l-2 border-gray-200 text-xs">
+        <button class="text-gray-600 hover:text-blue-600 flex items-center"
+                onclick="openFile('${data.report}')">
+          <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd"
+              d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"
+              clip-rule="evenodd"></path>
+          </svg>
+          <span title="${data.report}">${shortReportName}</span>
+        </button>
+      </div>
+    `;
+
+        container.prepend(reportDiv);
+      }
+
+      // Process each category
+      Object.keys(data).forEach(category => {
+        // Skip the main report entry if it exists
+        if (category === 'report') return;
+
+        // Skip categories with no tools/files
+        const categoryData = data[category];
+
+        // Check if there are regular tool files
+        const hasFiles = Object.keys(categoryData).some(tool => {
+          // Skip special properties
+          if (tool === 'module_reports' || tool === 'module_reports_all') return false;
+
+          // Check if the tool has files
+          return Array.isArray(categoryData[tool]) && categoryData[tool].length > 0;
+        });
+
+        // Skip if there are no files and no reports
+        if (!hasFiles && !categoryData.module_reports && !categoryData.module_reports_all) return;
+
+        // Create category container
+        const categoryDiv = document.createElement('div');
+        categoryDiv.className = 'mb-4';
+
+        // Gather all files in this category for the Download All functionality
+        let allCategoryFiles = [];
+
+        // Add module report files if they exist
+        if (categoryData.module_reports) {
+          allCategoryFiles.push(categoryData.module_reports);
+        }
+
+        if (categoryData.module_reports_all) {
+          allCategoryFiles.push(categoryData.module_reports_all);
+        }
+
+        // Add each tool's files
+        Object.keys(categoryData).forEach(tool => {
+          // Skip special properties
+          if (tool === 'module_reports' || tool === 'module_reports_all') return;
+
+          const files = categoryData[tool];
+          if (Array.isArray(files) && files.length > 0) {
+            allCategoryFiles = allCategoryFiles.concat(files);
+          }
+        });
+
+        // Create category header
+        const categoryHeader = document.createElement('div');
+        categoryHeader.className = 'flex items-center justify-between mb-2';
+        categoryHeader.innerHTML = `
+      <h3 class="font-medium text-gray-700">${category}</h3>
+      <button class="text-xs text-blue-600 hover:text-blue-800 flex items-center download-all-btn">
+        <span>Download All</span>
+        <svg class="w-3 h-3 ml-1" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd"
+            d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L10 12.586l2.293-2.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
+            clip-rule="evenodd"></path>
+        </svg>
+      </button>
+    `;
+
+        // Add event listener for the Download All button
+        const downloadAllBtn = categoryHeader.querySelector('.download-all-btn');
+        downloadAllBtn.onclick = function () {
+          downloadAllFiles(allCategoryFiles, category);
+        };
+
+        // Add category tools and files
+        const toolsContainer = document.createElement('div');
+        toolsContainer.className = 'pl-2 border-l-2 border-gray-200';
+
+        // Add module reports if they exist
+        if (categoryData.module_reports) {
+          const shortModuleReport = shortenFileName(categoryData.module_reports);
+
+          const moduleReportDiv = document.createElement('div');
+          moduleReportDiv.className = 'mb-2';
+          moduleReportDiv.innerHTML = `
+        <p class="text-sm font-medium text-gray-600 mb-1">Module Report</p>
+        <div class="flex flex-col space-y-1 text-xs pl-2">
+          <button class="text-gray-600 hover:text-blue-600 flex items-center" 
+                  onclick="openFile('${categoryData.module_reports}')">
+            <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd"
+                d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"
+                clip-rule="evenodd"></path>
+            </svg>
+            <span title="${categoryData.module_reports}">${shortModuleReport}</span>
+          </button>
+        </div>
+      `;
+          toolsContainer.appendChild(moduleReportDiv);
+        }
+
+        // Add module_reports_all if it exists
+        if (categoryData.module_reports_all) {
+          const shortModuleReportAll = shortenFileName(categoryData.module_reports_all);
+
+          const moduleReportAllDiv = document.createElement('div');
+          moduleReportAllDiv.className = 'mb-2';
+          moduleReportAllDiv.innerHTML = `
+        <p class="text-sm font-medium text-gray-600 mb-1">Module Report (All)</p>
+        <div class="flex flex-col space-y-1 text-xs pl-2">
+          <button class="text-gray-600 hover:text-blue-600 flex items-center" 
+                  onclick="openFile('${categoryData.module_reports_all}')">
+            <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd"
+                d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"
+                clip-rule="evenodd"></path>
+            </svg>
+            <span title="${categoryData.module_reports_all}">${shortModuleReportAll}</span>
+          </button>
+        </div>
+      `;
+          toolsContainer.appendChild(moduleReportAllDiv);
+        }
+
+        // Add each tool and its files
+        Object.keys(categoryData).forEach(tool => {
+          // Skip special properties
+          if (tool === 'module_reports' || tool === 'module_reports_all') return;
+
+          const files = categoryData[tool];
+
+          // Ensure files is an array before proceeding
+          if (!Array.isArray(files) || files.length === 0) return;
+
+          const toolDiv = document.createElement('div');
+          toolDiv.className = 'mb-2';
+
+          // Create tool header
+          const toolHeader = document.createElement('p');
+          toolHeader.className = 'text-sm font-medium text-gray-600 mb-1';
+          toolHeader.textContent = tool;
+
+          // Create file list
+          const fileList = document.createElement('div');
+          fileList.className = 'flex flex-col space-y-1 text-xs pl-2';
+
+          // Add each file
+          files.forEach(file => {
+            if (!file) return; // Skip if file is null or undefined
+
+            const shortFileName = shortenFileName(file);
+
+            const fileButton = document.createElement('button');
+            fileButton.className = 'text-gray-600 hover:text-blue-600 flex items-center';
+            fileButton.setAttribute('onclick', `openFile('${file}')`);
+            fileButton.setAttribute('title', file); // Add full filename as tooltip
+
+            const isHtml = file.endsWith('.html');
+            const isJson = file.endsWith('.json') || file.endsWith('.txt');
+
+            fileButton.innerHTML = `
+          <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd"
+              d="${isHtml
+                ? 'M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z'
+                : 'M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4z'}"
+              clip-rule="evenodd"></path>
+          </svg>
+          <span>${shortFileName}</span>
+        `;
+
+            fileList.appendChild(fileButton);
+          });
+
+          toolDiv.appendChild(toolHeader);
+          toolDiv.appendChild(fileList);
+          toolsContainer.appendChild(toolDiv);
+        });
+
+        categoryDiv.appendChild(categoryHeader);
+        categoryDiv.appendChild(toolsContainer);
+        container.appendChild(categoryDiv);
+      });
+
+      // If no files were found
+      if (container.children.length === 0) {
+        container.innerHTML = `
+      <div class="flex items-center justify-center h-48 text-gray-400">
+        <p>No files available</p>
+      </div>
+    `;
+      }
+    }
+
+    // Function to download all files from a category
+    async function downloadAllFiles(files, categoryName) {
+      if (!files || files.length === 0) {
+        alert('No files to download in this category.');
+        return;
+      }
+
+      // Use JSZip if available
+      if (typeof JSZip === 'undefined') {
+        // JSZip not loaded, load it dynamically
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+        document.head.appendChild(script);
+
+        // Wait for script to load
+        await new Promise((resolve, reject) => {
+          script.onload = resolve;
+          script.onerror = reject;
+        });
+      }
+
+      // Create a loading indicator
+      const loadingIndicator = document.createElement('div');
+      loadingIndicator.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+      loadingIndicator.innerHTML = `
+    <div class="bg-white p-6 rounded-lg shadow-xl">
+      <div class="flex items-center">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mr-3"></div>
+        <p class="text-lg">Preparing download...</p>
+      </div>
+    </div>
+  `;
+      document.body.appendChild(loadingIndicator);
+
+      try {
+        // Create a new zip file
+        const zip = new JSZip();
+
+        // Fetch and add each file to the zip
+        for (const fileName of files) {
+          try {
+            const response = await fetch(`/file/${fileName}`);
+            if (!response.ok) throw new Error(`Failed to fetch ${fileName}`);
+
+            const fileContent = await response.text();
+            zip.file(fileName, fileContent);
+          } catch (error) {
+            console.error(`Error adding ${fileName} to zip:`, error);
+            // Continue with other files
+          }
+        }
+
+        // Generate the zip file
+        const zipBlob = await zip.generateAsync({ type: 'blob' });
+
+        // Create and trigger download
+        const downloadLink = document.createElement('a');
+        downloadLink.href = URL.createObjectURL(zipBlob);
+        downloadLink.download = `${categoryName}_files.zip`;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+
+        // Clean up
+        URL.revokeObjectURL(downloadLink.href);
+      } catch (error) {
+        console.error('Error creating zip file:', error);
+        alert('Failed to create download. Please try again.');
+      } finally {
+        // Remove loading indicator
+        document.body.removeChild(loadingIndicator);
+      }
+    }
+
+
+
+
+    // Function to open and display file content
+    function openFile(fileId) {
+      const fileContent = document.getElementById('file-content');
+      const currentFile = document.getElementById('current-file');
+
+      // Set the current file name with shortened display
+      const shortFileName = shortenFileName(fileId);
+      currentFile.textContent = shortFileName;
+
+      // Store the original filename as attribute for download
+      currentFile.setAttribute('realname', fileId);
+
+      // Highlight selected file button
+      const fileButtons = document.querySelectorAll('[onclick^="openFile"]');
+      fileButtons.forEach(button => {
+        button.classList.remove('text-blue-600');
+        button.classList.add('text-gray-600');
+      });
+
+      const selectedButton = document.querySelector(`[onclick="openFile('${fileId}')"]`);
+      if (selectedButton) {
+        selectedButton.classList.remove('text-gray-600');
+        selectedButton.classList.add('text-blue-600');
+      }
+
+      // Show loading indicator
+      fileContent.innerHTML = '<div class="flex items-center justify-center h-full"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div></div>';
+
+      // Enable download and copy buttons
+      document.getElementById('download-btn').classList.remove('opacity-50', 'cursor-not-allowed');
+      // document.getElementById('copy-btn').classList.remove('opacity-50', 'cursor-not-allowed');
+
+      // Load the file content from the server
+      fetch(`/file/${fileId}`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('File not found or unauthorized');
+          }
+          // Store the content type
+          const contentType = response.headers.get('content-type');
+          return response.text().then(text => ({ text, contentType }));
+        })
+        .then(({ text, contentType }) => {
+          // Process the content based on its type
+          if (contentType && contentType.includes('application/json')) {
+            try {
+              // Format JSON for better readability
+              const jsonObj = JSON.parse(text);
+              const formattedJson = JSON.stringify(jsonObj, null, 2);
+              fileContent.innerHTML = `<pre class="language-json">${escapeHtml(formattedJson)}</pre>`;
+            } catch (e) {
+              // If JSON parsing fails, show as plain text
+              fileContent.innerHTML = `<pre>${escapeHtml(text)}</pre>`;
+            }
+          } else if (contentType && contentType.includes('application/xml')) {
+            // For XML files
+            fileContent.innerHTML = `<pre class="language-xml">${escapeHtml(text)}</pre>`;
+          } else {
+            // For plain text and other formats
+            fileContent.innerHTML = `<pre>${escapeHtml(text)}</pre>`;
+          }
+        })
+        .catch(error => {
+          console.error('Error loading file:', error);
+          fileContent.innerHTML = `<div class="text-red-500">Error loading file: ${escapeHtml(error.message)}</div>`;
+
+          // Disable download and copy buttons on error
+          document.getElementById('download-btn').classList.add('opacity-50', 'cursor-not-allowed');
+          // document.getElementById('copy-btn').classList.add('opacity-50', 'cursor-not-allowed');
+        });
+    }
+
+
+    function loadVulnerabilityStats() {
+      fetch('/vuln_stats')
+        .then(res => res.json())
+        .then(data => {
+          const byCategory = data.by_category || {};
+          const tbody = document.querySelector(".divide-y.divide-gray-200.bg-white");
+          tbody.innerHTML = "";
+          hmli = [0, 0, 0, 0];
+
+          for (const [category, details] of Object.entries(byCategory)) {
+            const stats = details.counts;
+            const descriptions = details.descriptions;
+
+            const row = document.createElement("tr");
+            row.className = "cursor-pointer hover:bg-gray-100";
+            row.setAttribute("data-category", category);
+            row.setAttribute("data-desc", JSON.stringify(descriptions));
+            row.addEventListener("click", function () {
+              showPopup(this.getAttribute("data-category"), JSON.parse(this.getAttribute("data-desc")));
+            });
+
+            row.innerHTML = `
+          <td class="px-4 py-2 text-sm text-gray-900">${category}</td>
+          <td class="px-4 py-2 text-center text-sm text-gray-900">
+            <span class="px-2 py-1 rounded-full bg-red-100 text-red-800">${stats.High || 0}</span></td>
+          <td class="px-4 py-2 text-center text-sm text-gray-900">
+            <span class="px-2 py-1 rounded-full bg-yellow-100 text-yellow-800">${stats.Medium || 0}</span></td>
+          <td class="px-4 py-2 text-center text-sm text-gray-900">
+            <span class="px-2 py-1 rounded-full bg-blue-100 text-blue-800">${stats.Low || 0}</span></td>
+          <td class="px-4 py-2 text-center text-sm text-gray-900">
+            <span class="px-2 py-1 rounded-full bg-gray-100 text-gray-800">${stats.Info || 0}</span></td>
+        `;
+            hmli[0] += stats.High || 0;
+            hmli[1] += stats.Medium || 0;
+            hmli[2] += stats.Low || 0;
+            hmli[3] += stats.Info || 0;
+            tbody.appendChild(row);
+          }
+          document.querySelector('#v-h').textContent = hmli[0];
+          document.querySelector('#v-m').textContent = hmli[1];
+          document.querySelector('#v-l').textContent = hmli[2];
+          document.querySelector('#v-i').textContent = hmli[3];
+
+        })
+        .catch(err => {
+          console.error("Error fetching vuln stats:", err);
+        });
+    }
+
+    function showPopup(category, desc) {
+      const popup = document.createElement("div");
+      popup.className = "fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50";
+      popup.innerHTML = `
+    <div class="bg-white rounded-lg p-6 max-w-lg shadow-xl">
+      <h2 class="text-lg font-semibold mb-4">${category} Vulnerability Summary</h2>
+      <ul class="text-sm text-gray-700 space-y-2">
+        ${['High', 'Medium', 'Low', 'Info'].map(level => desc[level]?.length ? `<li><strong>${level}:</strong><ul class='list-disc list-inside text-sm'>${desc[level].map(line => `<li>${line}</li>`).join('')}</ul></li>` : '').join('')}
+      </ul>
+      <div class="text-right mt-6">
+        <button class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700" onclick="this.closest('.fixed').remove()">Close</button>
+      </div>
+    </div>
+  `;
+      document.body.appendChild(popup);
+    }
+
+    // --- Modal ---
+    function showModal(title, message) {
+      $("#modal-title").text(title);
+      $("#modal-body").html(`<pre><code class="language-json">${hljs.highlight(message, { language: 'json' }).value}</code></pre>`);
+      $("#download-json").off("click").on("click", () => {
+        const blob = new Blob([message], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${title.replace(/\s+/g, "_").toLowerCase()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+      $("#modal").removeClass("hidden");
+    }
+
+    $("#modal-close").on("click", function () {
+      $("#modal").addClass("hidden");
+    });
+
+    // --- Enable or disable chat ---
+    function toggleChat(enabled) {
+      $("#message-input").prop("disabled", !enabled);
+      $("button[type='submit']").prop("disabled", !enabled);
+    }
+
+    // --- Render dropdown list based on input ---
+    function renderDropdown(endpoints, filter = "") {
+      const box = $("#endpoint-dropdown");
+      box.empty();
+      const lcFilter = filter.toLowerCase();
+
+      if (!endpoints.length) {
+        box.append(`<div class="px-3 py-2 text-sm text-gray-500">No saved endpoints</div>`);
+        return;
+      }
+
+      endpoints
+        .filter(e => e.endpoint.toLowerCase().includes(lcFilter))
+        .forEach(e => {
+          const row = $(`
+          <div class="flex justify-between items-center px-3 py-2
+                      text-sm cursor-pointer hover:bg-gray-100">
+            <span class="truncate ${e.last_used ? 'font-semibold text-blue-700' : ''}">
+              ${e.endpoint}
+            </span>
+            <button title="Delete"
+                    class="delete-endpoint-btn text-red-500 hover:text-red-700"
+                    data-ep="${e.endpoint}">🗑️</button>
+          </div>`);
+          box.append(row);
+        });
+
+      if (box.children().length === 0) {
+        box.append(`<div class="px-3 py-2 text-sm text-gray-500">No match</div>`);
+      }
+    }
+
+    // --- Load endpoint list from backend ---
+    function loadRemoteEndpoints(selected = "") {
+      $.get("/list_remote_endpoints", data => {
+        window.__endpointCache = data.endpoints || [];
+        renderDropdown(window.__endpointCache, "");
+        if (selected) $("#remote-endpoint-input").val(selected);
+      });
+    }
+
+    // --- Resume session from blank POST ---
+    function resumeRemoteEndpoint() {
+      $.ajax({
+        url: "/set_remote_endpoint",
+        method: "POST",
+        contentType: "application/json",
+        data: JSON.stringify({}),
+        success: res => {
+          toggleChat(true);
+          $("#remote-endpoint-input").val(res.remote_endpoint);
+          loadRemoteEndpoints(res.remote_endpoint);
+        },
+        error: () => {
+          toggleChat(false);
+          loadRemoteEndpoints();
+        }
+      });
+    }
+
+    // --- Set new remote endpoint ---
+    function setRemote(endpoint) {
+      $.ajax({
+        url: "/set_remote_endpoint",
+        method: "POST",
+        contentType: "application/json",
+        data: JSON.stringify({ remote_endpoint: endpoint }),
+        success: res => {
+          toggleChat(true);
+          loadRemoteEndpoints(endpoint);
+          showModal("Success", res.message);
+        },
+        error: xhr => {
+          toggleChat(false);
+          const err = xhr.responseJSON?.error || "Failed to set endpoint.";
+          showModal("Error", err);
+        }
+      });
+    }
+
+    // --- Delete a saved remote endpoint ---
+    function deleteRemote(endpoint) {
+      $.ajax({
+        url: "/delete_remote_endpoint",
+        method: "POST",
+        contentType: "application/json",
+        data: JSON.stringify({ remote_endpoint: endpoint }),
+        success: res => {
+          showModal("Deleted", res.message || "Endpoint removed.");
+          $("#remote-endpoint-input").val("");
+          toggleChat(false);
+          resumeRemoteEndpoint();
+        },
+        error: xhr => {
+          const err = xhr.responseJSON?.error || "Delete failed.";
+          showModal("Error", err);
+        }
+      });
+    }
+
+    // --- DOM Events ---
+    $(document)
+      // Typing: filter dropdown
+      .on("input", "#remote-endpoint-input", function () {
+        const val = $(this).val();
+        renderDropdown(window.__endpointCache || [], val);
+        $("#endpoint-dropdown").removeClass("hidden");
+      })
+      // Focus: show dropdown
+      .on("focus", "#remote-endpoint-input", () => {
+        renderDropdown(window.__endpointCache || []);
+        $("#endpoint-dropdown").removeClass("hidden");
+      })
+      // Click entry: set endpoint
+      .on("click", "#endpoint-dropdown div:not(:has(.delete-endpoint-btn))", function () {
+        const endpoint = $(this).text().trim();
+        $("#remote-endpoint-input").val(endpoint);
+        $("#endpoint-dropdown").addClass("hidden");
+        setRemote(endpoint);
+      })
+      // Click delete
+      .on("click", ".delete-endpoint-btn", function (e) {
+        e.stopPropagation();
+        deleteRemote($(this).data("ep"));
+      })
+      // Click outside: hide dropdown
+      .on("click", function (e) {
+        if (!$(e.target).closest("#remote-endpoint-input, #endpoint-dropdown").length) {
+          $("#endpoint-dropdown").addClass("hidden");
+        }
+      });
+
+    // --- Button Events ---
+    $("#set-remote-btn").on("click", () => {
+      const ep = $("#remote-endpoint-input").val().trim();
+      if (!ep) return showModal("Error", "Please enter an endpoint.");
+      setRemote(ep);
+    });
+
+    $("#get-features-btn").on("click", () => {
+      $.get("/check_services", res => {
+        const formattedJson = JSON.stringify(res.services, null, 2);
+        showModal("Available Services", formattedJson);
+      }).fail(xhr => {
+        const err = xhr.responseJSON?.error || "Error checking services.";
+        showModal("Error", err);
+      });
+    });
+
+    $(document).ready(function () {
+      resumeRemoteEndpoint();
+    });
+
+    const settingsBtn = document.getElementById('settings-btn');
+    const settingsMenu = document.getElementById('settings-menu');
+
+    settingsBtn.addEventListener('click', () => {
+      settingsMenu.classList.toggle('hidden');
+    });
+
+    // Optional: click outside to close
+    window.addEventListener('click', function (e) {
+      if (!settingsMenu.contains(e.target) && !settingsBtn.contains(e.target)) {
+        settingsMenu.classList.add('hidden');
+      }
+    });
+
+
+
+    document.addEventListener("DOMContentLoaded", function () {
+      fetch("/check_services")
+        .then(response => response.json())
+        .then(data => {
+          const services = data.services;
+          if (!services || typeof services !== 'object') {
+            console.error("Invalid services response:", data);
+            return;
+          }
+
+          const uniqueModules = new Set();
+
+          Object.values(services).forEach(tools => {
+            tools.forEach(tool => {
+              (tool.modules || []).forEach(module => uniqueModules.add(module));
+            });
+          });
+
+          const container = document.getElementById("modules-container");
+          container.innerHTML = ""; // Clear previous checkboxes if any
+
+          Array.from(uniqueModules).forEach(module => {
+            const label = document.createElement("label");
+            label.className = "flex items-center space-x-2 border rounded p-2 cursor-pointer hover:bg-gray-50";
+
+            label.innerHTML = `
+          <input type="checkbox" class="form-checkbox h-4 w-4 text-blue-600 scan-module" value="${module}">
+          <span>${module}</span>
+        `;
+
+            container.appendChild(label);
+          });
+        })
+        .catch(error => {
+          console.error("Error calling /check_services:", error);
+        });
+    });
+
+
+
+  </script>
+
+</body>
+
+</html>

@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sarvekshanam : Smart Web Vulnerability Dashboard</title>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+  <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+
+</head>
+
+<body class="bg-gray-100 font-sans antialiased text-gray-900">
+  <div class="h-screen flex flex-col">
+    <!-- Header -->
+    <header class="bg-[#213348] text-white shadow-lg relative">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-16">
+          <!-- Title -->
+          <div class="flex-shrink-0">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="Sarvekshanam : Smart Web Vulnerability Dashboard" class="h-12 w-auto">
+          </div>
+
+          <!-- Navigation -->
+          <div class="flex items-center space-x-4">
+            <a href="#" id="chat-tab" class="bg-[#4aaba9] px-3 py-2 rounded-md text-sm font-medium">Chat</a>
+            <a href="/dashboard" id="dashboard-tab"
+              class="px-3 py-2 border-white border rounded-md text-sm font-medium">Dashboard</a>
+            <a href="/new" class="border-white border px-3 py-2 rounded-md text-sm font-medium">+</a>
+
+            <!-- Settings Icon -->
+            <div class="relative">
+              <button id="settings-btn" class="border border-white px-3 py-2 rounded-md text-sm font-medium">⚙</button>
+
+              <!-- Settings Dropdown -->
+              <div id="settings-menu"
+                class="absolute right-0 mt-2 w-72 bg-white text-black shadow-lg rounded-lg p-4 hidden z-50">
+                <h2 class="text-lg font-semibold mb-3">Remote Endpoint</h2>
+                <div class="relative">
+                  <input id="remote-endpoint-input" type="text" placeholder="Type or pick an endpoint..."
+                    class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <div id="endpoint-dropdown"
+                    class="absolute z-40 mt-1 w-full max-h-52 overflow-y-auto bg-white border border-gray-300 rounded shadow-lg hidden">
+                    <!-- items injected by JS -->
+                  </div>
+                </div>
+                <div class="flex gap-2 mt-4">
+                  <button id="set-remote-btn"
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Set</button>
+                  <button id="get-features-btn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">Get
+                    Features</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+
+
+
+
+
+    <!-- Chat Interface -->
+    <div class="flex-1 flex flex-col overflow-hidden">
+      <div class="flex-1 overflow-hidden flex">
+        <div class="flex-1 flex flex-col">
+          <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-4"></div>
+          <div class="border-t border-gray-200 px-4 pt-4 pb-6">
+            <form id="message-form" class="flex space-x-2">
+              <div class="flex-1">
+                <textarea id="message-input"
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Type your message..." rows="1" style="resize: none;"></textarea>
+              </div>
+              <button type="submit"
+                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#213348] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                  stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
+                <span class="ml-1">Send</span>
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg shadow-lg w-11/12 max-w-4xl p-6 relative max-h-[90vh] overflow-y-auto">
+      <h2 id="modal-title" class="text-lg font-bold mb-4">Message</h2>
+      <div id="modal-body"
+        class="text-sm text-gray-800 whitespace-pre-wrap overflow-x-auto max-h-[60vh] p-2 bg-gray-100 rounded border">
+      </div>
+      <div class="mt-4 flex justify-end space-x-2">
+        <button id="download-json"
+          class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">Download</button>
+        <button id="modal-close" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">Close</button>
+      </div>
+      <button id="modal-close-icon" class="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-xl">✕</button>
+    </div>
+  </div>
+
+
+
+  <script>
+    function scrollToBottom() {
+      const messageBody = document.getElementById("chat-messages");
+      messageBody.scrollTop = messageBody.scrollHeight;
+    }
+
+
+    $("#modal").on("click", function (e) {
+      if ($(e.target).is("#modal")) {
+        $(this).addClass("hidden");
+      }
+    });
+
+
+    function sanitize(text) {
+      return text.replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    }
+
+    function formatResponse(text) {
+      // First sanitize the text
+      text = sanitize(text);
+
+      // Store paragraphs for later
+      let paragraphs = text.split(/\r\n|\r|\n\n/);
+      let formattedText = '';
+
+      for (let i = 0; i < paragraphs.length; i++) {
+        let paragraph = paragraphs[i].trim();
+        if (!paragraph) continue;
+
+        // Process headers
+        paragraph = paragraph.replace(/^### (.*$)/gim, '<h3 class="text-sm font-semibold mt-4 mb-2">$1</h3>');
+        paragraph = paragraph.replace(/^## (.*$)/gim, '<h2 class="text-base font-bold mt-4 mb-2">$1</h2>');
+        paragraph = paragraph.replace(/^# (.*$)/gim, '<h1 class="text-lg font-extrabold mt-6 mb-3">$1</h1>');
+
+        // Process Bold
+        paragraph = paragraph.replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>');
+
+        // Process lists properly
+        if (/^(\d+\.|[\*\+\-])\s+/m.test(paragraph)) {
+          let lines = paragraph.split(/\n/);
+          let listItems = [];
+          let inList = false;
+
+          for (let j = 0; j < lines.length; j++) {
+            let line = lines[j].trim();
+
+            // Detect any list (ordered or unordered)
+            if (/^(\d+\.\s+|[\*\+\-]\s+)/.test(line)) {
+              if (!inList) {
+                inList = true;
+                listItems = [];
+              }
+              line = line.replace(/^(\d+\.\s+|[\*\+\-]\s+)/, '');
+              listItems.push(line);
+            } else {
+              // Not a list item - finish the current list if any
+              if (inList) {
+                formattedText += '<ul class="pl-5 mb-4 list-disc list-inside">';
+                listItems.forEach(item => formattedText += `<li>${item}</li>`);
+                formattedText += '</ul>';
+                inList = false;
+                listItems = [];
+              }
+              // Handle normal line
+              formattedText += line + '<br>';
+            }
+          }
+
+          // End any remaining list
+          if (inList) {
+            formattedText += '<ul class="pl-5 mb-4 list-disc list-inside">';
+            listItems.forEach(item => formattedText += `<li>${item}</li>`);
+            formattedText += '</ul>';
+          }
+        } else {
+          // Handle regular paragraphs with line breaks
+          paragraph = paragraph.replace(/\n/g, '<br>');
+          formattedText += `<p class="mb-3">${paragraph}</p>`;
+        }
+      }
+
+      return formattedText;
+    }
+
+    function checkProcessing() {
+      $.get("/check", function (response) {
+        if (response === "wait") {
+          setTimeout(checkProcessing, 10000);
+        } else {
+          const now = new Date();
+          const time = now.getHours() + ':' + String(now.getMinutes()).padStart(2, '0');
+          const formatted = formatResponse(response);
+          const botHtml = `
+            <div class="flex justify-start">
+              <div class="bg-gray-200 text-gray-800 rounded-lg px-4 py-2 max-w-lg break-words">
+                ${formatted}
+                <div class="text-xs mt-1 text-gray-500">${time}</div>
+              </div>
+            </div>`;
+          $("#chat-messages").append(botHtml);
+          $("#message-input").prop("disabled", false);
+          $("button[type='submit']").prop("disabled", false);
+          scrollToBottom();
+        }
+      });
+    }
+
+    $(document).ready(function () {
+      $("#message-form").on("submit", function (event) {
+        event.preventDefault();
+
+        const now = new Date();
+        const time = now.getHours() + ':' + String(now.getMinutes()).padStart(2, '0');
+        const rawText = $("#message-input").val().trim();
+        if (!rawText) return;
+
+        const userHtml = `
+          <div class="flex justify-end">
+            <div class="bg-[#213348] text-white rounded-lg px-4 py-2 max-w-lg break-words">
+              <div class="text-sm whitespace-pre-wrap">${rawText}</div>
+              <div class="text-xs mt-1 text-blue-100">${time}</div>
+            </div>
+          </div>`;
+
+        $("#chat-messages").append(userHtml);
+        $("#message-input").val("").prop("disabled", true);
+        $("button[type='submit']").prop("disabled", true);
+        scrollToBottom();
+
+        $.ajax({
+          type: "POST",
+          url: "/get",
+          data: { msg: rawText },
+        }).done(function (data) {
+          const formatted = formatResponse(data);
+          const botHtml = `
+            <div class="flex justify-start">
+              <div class="bg-gray-200 text-gray-800 rounded-lg px-4 py-2 max-w-lg break-words">
+                ${formatted}
+                <div class="text-xs mt-1 text-gray-500">${time}</div>
+              </div>
+            </div>`;
+
+          $("#chat-messages").append(botHtml);
+          $("#message-input").prop("disabled", false);
+          $("button[type='submit']").prop("disabled", false);
+          scrollToBottom();
+
+          if (data === "Please Wait while we're Processing...") {
+            checkProcessing();
+          }
+        });
+      });
+
+      $("#message-input").on("keydown", function (e) {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          $("#message-form").submit();
+        }
+      });
+
+      scrollToBottom();
+    });
+
+
+    // --- Modal ---
+    function showModal(title, message) {
+      $("#modal-title").text(title);
+      $("#modal-body").html(`<pre><code class="language-json">${hljs.highlight(message, { language: 'json' }).value}</code></pre>`);
+      $("#download-json").off("click").on("click", () => {
+        const blob = new Blob([message], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${title.replace(/\s+/g, "_").toLowerCase()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+      $("#modal").removeClass("hidden");
+    }
+
+    $("#modal-close").on("click", function () {
+      $("#modal").addClass("hidden");
+    });
+
+    // --- Enable or disable chat ---
+    function toggleChat(enabled) {
+      $("#message-input").prop("disabled", !enabled);
+      $("button[type='submit']").prop("disabled", !enabled);
+    }
+
+    // --- Render dropdown list based on input ---
+    function renderDropdown(endpoints, filter = "") {
+      const box = $("#endpoint-dropdown");
+      box.empty();
+      const lcFilter = filter.toLowerCase();
+
+      if (!endpoints.length) {
+        box.append(`<div class="px-3 py-2 text-sm text-gray-500">No saved endpoints</div>`);
+        return;
+      }
+
+      endpoints
+        .filter(e => e.endpoint.toLowerCase().includes(lcFilter))
+        .forEach(e => {
+          const row = $(`
+          <div class="flex justify-between items-center px-3 py-2
+                      text-sm cursor-pointer hover:bg-gray-100">
+            <span class="truncate ${e.last_used ? 'font-semibold text-blue-700' : ''}">
+              ${e.endpoint}
+            </span>
+            <button title="Delete"
+                    class="delete-endpoint-btn text-red-500 hover:text-red-700"
+                    data-ep="${e.endpoint}">🗑️</button>
+          </div>`);
+          box.append(row);
+        });
+
+      if (box.children().length === 0) {
+        box.append(`<div class="px-3 py-2 text-sm text-gray-500">No match</div>`);
+      }
+    }
+
+    // --- Load endpoint list from backend ---
+    function loadRemoteEndpoints(selected = "") {
+      $.get("/list_remote_endpoints", data => {
+        window.__endpointCache = data.endpoints || [];
+        renderDropdown(window.__endpointCache, "");
+        if (selected) $("#remote-endpoint-input").val(selected);
+      });
+    }
+
+    // --- Resume session from blank POST ---
+    function resumeRemoteEndpoint() {
+      $.ajax({
+        url: "/set_remote_endpoint",
+        method: "POST",
+        contentType: "application/json",
+        data: JSON.stringify({}),
+        success: res => {
+          toggleChat(true);
+          $("#remote-endpoint-input").val(res.remote_endpoint);
+          loadRemoteEndpoints(res.remote_endpoint);
+        },
+        error: () => {
+          toggleChat(false);
+          loadRemoteEndpoints();
+        }
+      });
+    }
+
+    // --- Set new remote endpoint ---
+    function setRemote(endpoint) {
+      $.ajax({
+        url: "/set_remote_endpoint",
+        method: "POST",
+        contentType: "application/json",
+        data: JSON.stringify({ remote_endpoint: endpoint }),
+        success: res => {
+          toggleChat(true);
+          loadRemoteEndpoints(endpoint);
+          showModal("Success", res.message);
+        },
+        error: xhr => {
+          toggleChat(false);
+          const err = xhr.responseJSON?.error || "Failed to set endpoint.";
+          showModal("Error", err);
+        }
+      });
+    }
+
+    // --- Delete a saved remote endpoint ---
+    function deleteRemote(endpoint) {
+      $.ajax({
+        url: "/delete_remote_endpoint",
+        method: "POST",
+        contentType: "application/json",
+        data: JSON.stringify({ remote_endpoint: endpoint }),
+        success: res => {
+          showModal("Deleted", res.message || "Endpoint removed.");
+          $("#remote-endpoint-input").val("");
+          toggleChat(false);
+          resumeRemoteEndpoint();
+        },
+        error: xhr => {
+          const err = xhr.responseJSON?.error || "Delete failed.";
+          showModal("Error", err);
+        }
+      });
+    }
+
+    // --- DOM Events ---
+    $(document)
+      // Typing: filter dropdown
+      .on("input", "#remote-endpoint-input", function () {
+        const val = $(this).val();
+        renderDropdown(window.__endpointCache || [], val);
+        $("#endpoint-dropdown").removeClass("hidden");
+      })
+      // Focus: show dropdown
+      .on("focus", "#remote-endpoint-input", () => {
+        renderDropdown(window.__endpointCache || []);
+        $("#endpoint-dropdown").removeClass("hidden");
+      })
+      // Click entry: set endpoint
+      .on("click", "#endpoint-dropdown div:not(:has(.delete-endpoint-btn))", function () {
+        const endpoint = $(this).text().trim();
+        $("#remote-endpoint-input").val(endpoint);
+        $("#endpoint-dropdown").addClass("hidden");
+        setRemote(endpoint);
+      })
+      // Click delete
+      .on("click", ".delete-endpoint-btn", function (e) {
+        e.stopPropagation();
+        deleteRemote($(this).data("ep"));
+      })
+      // Click outside: hide dropdown
+      .on("click", function (e) {
+        if (!$(e.target).closest("#remote-endpoint-input, #endpoint-dropdown").length) {
+          $("#endpoint-dropdown").addClass("hidden");
+        }
+      });
+
+    // --- Button Events ---
+    $("#set-remote-btn").on("click", () => {
+      const ep = $("#remote-endpoint-input").val().trim();
+      if (!ep) return showModal("Error", "Please enter an endpoint.");
+      setRemote(ep);
+    });
+
+    $("#get-features-btn").on("click", () => {
+      $.get("/check_services", res => {
+        const formattedJson = JSON.stringify(res.services, null, 2);
+        showModal("Available Services", formattedJson);
+      }).fail(xhr => {
+        const err = xhr.responseJSON?.error || "Error checking services.";
+        showModal("Error", err);
+      });
+    });
+
+    $(document).ready(function () {
+      resumeRemoteEndpoint();
+    });
+
+    const settingsBtn = document.getElementById('settings-btn');
+    const settingsMenu = document.getElementById('settings-menu');
+
+    settingsBtn.addEventListener('click', () => {
+      settingsMenu.classList.toggle('hidden');
+    });
+
+    // Optional: click outside to close
+    window.addEventListener('click', function (e) {
+      if (!settingsMenu.contains(e.target) && !settingsBtn.contains(e.target)) {
+        settingsMenu.classList.add('hidden');
+      }
+    });
+
+  </script>
+
+</body>
+
+</html>

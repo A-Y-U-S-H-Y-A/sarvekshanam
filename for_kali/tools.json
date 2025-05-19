@@ -1,0 +1,193 @@
+[
+  {
+    "name": "XSStrike",
+    "command_template": "python XSStrike/xsstrike.py -u {url} --skip > xsstrike_{token}.txt",
+    "modules": ["XSS"],
+    "output_filename": "xsstrike_{token}.txt"
+  },
+  {
+    "name": "XSSVibes",
+    "command_template": "python xss_vibes/main.py -u {url} > xssvibe_{token}.txt",
+    "modules": ["XSS"],
+    "output_filename": "xssvibe_{token}.txt"
+  },
+  {
+    "name": "XSpear",
+    "command_template": "XSpear -u {url} -v 0 -o json > xspear_{token}.json",
+    "modules": ["XSS"],
+    "output_filename": "xspear_{token}.json"
+  },
+  {
+    "name": "PwnXSS",
+    "command_template": "python3 PwnXSS/pwnxss.py -u {url} > pwnxss_{token}.txt",
+    "modules": ["XSS"],
+    "output_filename": "pwnxss_{token}.txt"
+  },
+  {
+    "name": "XSSer",
+    "command_template": "xsser -u {xsser_url} > xsser_{token}.txt",
+    "modules": ["XSS"],
+    "output_filename": "xsser_{token}.txt"
+  },
+  {
+    "name": "Httpx",
+    "command_template": "echo \"{domain}\" > {token}.txt && httpx-toolkit -l {token}.txt -sc -td -cl -server -ct -lc -wc -rt -title -location -method -websocket -ip -cname -probe -json -o httpx_{token}.json",
+    "modules": ["InfoScanner"],
+    "output_filename": "httpx_{token}.json"
+  },
+  {
+    "name": "WhatWeb",
+    "command_template": "whatweb {url} > whatweb_{token}.txt",
+    "modules": ["InfoScanner"],
+    "output_filename": "whatweb_{token}.txt"
+  },
+  {
+    "name": "Wafw00f",
+    "command_template": "wafw00f {url} -o wafw00f_{token}.json",
+    "modules": ["InfoScanner"],
+    "output_filename": "wafw00f_{token}.json"
+  },
+  {
+    "name": "SHCheck",
+    "command_template": "./shcheck/shcheck.py {url} -i -x -k -j > shcheck_{token}.json",
+    "modules": ["InfoScanner"],
+    "output_filename": "shcheck_{token}.json"
+  },
+  {
+    "name": "S3Scanner",
+    "command_template": "s3scanner -bucket {domain} > s3scanner_{token}.txt",
+    "modules": ["InfoScanner"],
+    "output_filename": "s3scanner_{token}.txt"
+  },
+  {
+    "name": "Nmap",
+    "command_template": "nmap -T4 -A -v {domain} -oX nmap_{token}.xml",
+    "modules": ["InfoScanner"],
+    "output_filename": "nmap_{token}.xml"
+  },
+  {
+    "name": "PPFuzz",
+    "command_template": "echo \"{url}\" > sites.txt; ./ppfuzz -l sites.txt > ppfuzz_{token}.txt",
+    "modules": ["Misc"],
+    "output_filename": "ppfuzz_{token}.txt"
+  },
+  {
+    "name": "CSP Analyzer",
+    "command_template": "python3 csp-analyzer/csp-analyzer.py {url} > csp_analyzer_{token}.txt",
+    "modules": ["Misc"],
+    "output_filename": "csp_analyzer_{token}.txt"
+  },
+  {
+    "name": "Clickjacking Tester",
+    "command_template": "echo \"{url}\" > sites.txt; python Clickjacking_Tester.py sites.txt > clickjacking_tester_{token}.txt",
+    "modules": ["Misc"],
+    "output_filename": "clickjacking_tester_{token}.txt"
+  },
+  {
+    "name": "SQLMap",
+    "command_template": "sqlmap -u \"{url}\" --answers=\"follow=Y\" --batch",
+    "modules": ["SQLi"]
+  },
+  {
+    "name": "SSLscan",
+    "command_template": "sslscan {url} > sslscan_{token}.txt",
+    "modules": ["SSL"],
+    "output_filename": "sslscan_{token}.txt"
+  },
+  {
+    "name": "SSLyze",
+    "command_template": "sslyze --json_out sslyze_{token}.json {domain}",
+    "modules": ["SSL"],
+    "output_filename": "sslyze_{token}.json"
+  },
+  {
+    "name": "TestSSL",
+    "command_template": "testssl --jsonfile-pretty testssl_{token}.json {domain}",
+    "modules": ["SSL"],
+    "output_filename": "testssl_{token}.json"
+  },
+  {
+    "name": "Wapiti",
+    "command_template": "wapiti -u {url} -f json -o wapiti_{token}.json",
+    "modules": ["WebScanner"],
+    "output_filename": "wapiti_{token}.json"
+  },
+  {
+    "name": "Dig",
+    "command_template": "dig {domain} SOA > dig_{token}.txt; dig {domain} >> dig_{token}.txt",
+    "modules": ["DNS"],
+    "output_filename": "dig_{token}.txt"
+  },
+  {
+    "name": "DNScan",
+    "command_template": "./dnscan/dnscan.py -d {domain} -o dnscan_{token}.txt",
+    "modules": ["DNS"],
+    "output_filename": "dnscan_{token}.txt"
+  },
+  {
+    "name": "DNSenum",
+    "command_template": "dnsenum --noreverse --nocolor {domain} -o dnsenum_{token}.txt",
+    "modules": ["DNS"],
+    "output_filename": "dnsenum_{token}.txt"
+  },
+  {
+    "name": "DNSrecon",
+    "command_template": "dnsrecon -d {domain} > dnsrecon_{token}.txt",
+    "modules": ["DNS"],
+    "output_filename": "dnsrecon_{token}.json"
+  },
+  {
+    "name": "Domain Analyzer",
+    "command_template": "./domain_analyzer/domain_analyzer.py -d {domain} -a -o && mv ./{domain}./{domain}..txt domain_analyzer_{token}.txt",
+    "modules": ["DNS"],
+    "output_filename": "domain_analyzer_{token}.txt"
+  },
+  {
+    "name": "Fierce",
+    "command_template": "fierce --domain $(echo {domain} | sed \"s/^www\\.//\") > fierce_{token}.txt",
+    "modules": ["DNS"],
+    "output_filename": "fierce_{token}.txt"
+  },
+  {
+    "name": "Arjun",
+    "command_template": "arjun -u {url} -oJ arjun_{token}.json",
+    "modules": ["Assetfinder"],
+    "output_filename": "arjun_{token}.json"
+  },
+  {
+    "name": "Sublist3r",
+    "command_template": "sublist3r -d {domain} -o sublist3r_{token}.txt",
+    "modules": ["Assetfinder"],
+    "output_filename": "sublist3r_{token}.txt"
+  },
+  {
+    "name": "AssetFinder",
+    "command_template": "assetfinder {domain} > af_{token}.txt",
+    "modules": ["Assetfinder"],
+    "output_filename": "af_{token}.txt"
+  },
+  {
+    "name": "Wfuzz",
+    "command_template": "wfuzz -o json -w /usr/share/wordlists/dirb/common.txt {fuzz_url} > wfuzz_{token}.json",
+    "modules": ["Pathfinders"],
+    "output_filename": "wfuzz_{token}.json"
+  },
+  {
+    "name": "Gobuster",
+    "command_template": "gobuster dir -u {url} -w /usr/share/wordlists/dirb/common.txt -o gobuster_{token}.txt",
+    "modules": ["Pathfinders"],
+    "output_filename": "gobuster_{token}.txt"
+  },
+  {
+    "name": "Ffuf",
+    "command_template": "ffuf -json -w /usr/share/wordlists/dirb/common.txt -u {fuzz_url} -o ffuf_{token}.json",
+    "modules": ["Pathfinders"],
+    "output_filename": "ffuf_{token}.json"
+  },
+  {
+    "name": "Dirsearch",
+    "command_template": "dirsearch -u {domain} --format csv -o dirsearch_{token}.csv",
+    "modules": ["Pathfinders"],
+    "output_filename": "dirsearch_{token}.csv"
+  }
+]
